@@ -1,0 +1,143 @@
+---
+# Challenge 3
+
+# Name - Maria Master
+# INST 314 (0202)
+# Dr. Scott Jackson
+# GTA: Aditya Patkar
+---
+
+# Part 1
+
+1. Name of student whose data set I'm using: Zhen Zhou
+
+2. Kaggle Link: https://www.kaggle.com/datasets/sudalairajkumar/covid19-in-usa?select=us_states_covid19_daily.csv (particularly working with: us_states_covid19_daily.csv)
+
+3. The data is untidy because there are several missing values for some of the columns. Not only that but the column names are also long and just really hard to read. It lacks a description of a column name for further clarity. The same date is repeated multiple times for different observations for different states but this creates redundancy. What also is confusing is how some of the columns are named such as there is a column called 'death' and a column called 'deathConfirmed'; these numbers are the same. Because of these untidy principles, it is hard to get an overall picture of a certain state quickly with fewer computations. Additionally, having so many missing values made me question whether it was possible that if these values weren't missing, the results would be quite different, such as it might have had a few outliers.
+
+4. To deal with missing values, we need to fill them with appropriate values such as 0s or NaNs. Or, if we find any rows that has way too many missing values than actual values, for the sake of this analysis, we can remove those rows. For column names, we can rename them and if any of them needs to be transformed to a certain datatype, we can do that too. We can also make sure the same data is not repeated into two different columns. 
+
+# Part 2
+
+5. From the dataset above (question 2), two numeric columns I choose are 'death' and 'hospitalized'. The 'death' variable represents the number of deaths per day (single row of observation) per state. The 'hospitalized' variable represents the number of people hospitalized per day per state. 
+
+6. Histogram of 'death' and 'hospitalized'.
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+# Load data
+
+data <- read.csv('/Users/mariagomesmaster/Documents/INST314/Challenge3/us_states_covid19_daily.csv')
+
+# Check if data is loaded successfully
+
+if (is.data.frame(data)) {
+  cat("Data load successful!\n")
+} else {
+  cat("Unable to load data from the CSV file.\n")
+}
+```
+```{r}
+# Get a overall summary of the two columns
+
+death <- data$death
+summary(death)
+
+hospitalized <- data$hospitalized
+summary(hospitalized)
+```
+```{r}
+# histogram of 'death'
+
+ggplot(data, aes(x = death)) + geom_histogram()
+```
+```{r}
+# histogram of 'hospitalized'
+
+ggplot(data, aes(x=hospitalized)) + geom_histogram()
+```
+*Ans*: Both 'death' and 'hospitalized' have a right-skewed distribution and they are unimodal. Both of them also have outliers with high values.
+
+7. Histogram of 'death' and 'hospitalized' after log-transforming them.
+
+```{r}
+# Log transform both 'death' and 'hospitalized'
+
+data$logDeath <- log(data$death)
+
+data$logHospitalized <- log(data$hospitalized)
+
+```
+```{r}
+# Histogram of log transformed 'death' 
+
+ggplot(data, aes(x=logDeath)) + geom_histogram()
+
+```
+```{r}
+# Histogram of log transformed 'hospitalized'
+
+ggplot(data, aes(x=logHospitalized)) + geom_histogram()
+```
+
+8. I think that log-transforming them is helpful in this case. Both 'death' and 'hospitalized' variables have an extreme right-skewed distribution with outliers that has high values. Moreover, they don't seem to have any negative numbers. However, we might lose data in the sense that there could be potentially zeros in these columns that are being lost during this transformation. Regardless, the shapre of the distribution looks more normal after log-transforming these variables.
+
+9. Composite variable creation. 
+
+To standardize:
+- different range 
+- different units
+
+Composite variable:
+- add, subtract, divide, multiply
+
+```{r}
+print(colnames(data))
+```
+
+```{r}
+# Composite Variable - Positive Covid Test Rate
+
+# 1. Standardize
+
+data$zHospitalized <- as.numeric(scale(data$hospitalized))
+
+data$zPositiveCases <- as.numeric(scale(data$positive))
+
+# 2. Composite Variable
+
+data$compositeCurrentInfected <- data$zPositive - data$zHospitalized 
+
+# last 5 columns -- the last one is the composite variable
+tail(data[, (ncol(data)-3):ncol(data)])
+```
+
+10. Histogram of the composite variable.
+
+```{r}
+# summary
+
+summary(data$compositeCurrentInfected)
+```
+```{r}
+# Histogram
+
+ggplot(data, aes(x=compositeCurrentInfected)) + geom_histogram()
+```
+```{r}
+# Original histograms for the 'positive' and 'hospitalized' variables w/o standardizing
+
+ggplot(data, aes(x=positive)) + geom_histogram()
+ggplot(data, aes(x=hospitalized)) + geom_histogram()
+
+# Histograms after standardization
+ggplot(data, aes(x=zPositiveCases)) + geom_histogram()
+ggplot(data, aes(x=zHospitalized)) + geom_histogram()
+```
+
+*Ans*: Compared to the original distributions of both 'positive' and 'hospitalized' which were right-skewed, the composite variable seems to have a slight normal distribution.
+
+11. This composite variable is meaningful. By subtracting the total number of hospitalized patients from the reported total positive cases for that day, we can find out how many people are infected in the community and not hospitalized yet. Doing so can help us learn more about the precautions differnt communities can take.
